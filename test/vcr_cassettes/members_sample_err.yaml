@@ -8,17 +8,17 @@ interactions:
       User-Agent: [python-requests/2.18.4 habanero/0.6.0.3]
       X-USER-AGENT: [python-requests/2.18.4 habanero/0.6.0.3]
     method: GET
-    uri: https://api.crossref.org/works/10.1371/journal.pone.0033693?query.author=carl+boettiger
+    uri: https://api.crossref.org/members?sample=2
   response:
-    body: {string: '{"status":"failed","message-type":"validation-failure","message":[{"type":"parameter-not-allowed","value":"query.*","message":"This
-        route does not support field query parameters"}]}'}
+    body: {string: '{"status":"failed","message-type":"validation-failure","message":[{"type":"parameter-not-allowed","value":"sample","message":"This
+        route does not support sample"}]}'}
     headers:
       Access-Control-Allow-Headers: [X-Requested-With]
       Access-Control-Allow-Origin: ['*']
       Connection: [close]
-      Content-Length: ['181']
+      Content-Length: ['164']
       Content-Type: [application/json;charset=UTF-8]
-      Date: ['Thu, 24 May 2018 23:07:05 GMT']
+      Date: ['Thu, 24 May 2018 23:05:43 GMT']
       Server: [http-kit]
       Vary: [Accept]
       X-Rate-Limit-Interval: [1s]

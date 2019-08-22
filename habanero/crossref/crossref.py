@@ -11,7 +11,6 @@ class Crossref(object):
 
     |
     |
-    |
 
     **Includes methods matching Crossref API routes**
 
@@ -43,7 +42,7 @@ class Crossref(object):
     As of September 18th 2017 any API queries that use HTTPS and have
     appropriate contact information will be directed to a special pool
     of API machines that are reserved for polite users. If you connect
-    to the Crossreef API using HTTPS and provide contact
+    to the Crossref API using HTTPS and provide contact
     information, then they will send you to a separate pool of machines,
     with better control the performance of these machines because they can
     block abusive users.
@@ -69,7 +68,7 @@ class Crossref(object):
 
     See the headers `X-Rate-Limit-Limit` and `X-Rate-Limit-Interval` for current
     rate limits. As of this writing the limit is 50 requests per second,
-    but that could change. In addiiton, it's not clear what the time is to reset.
+    but that could change. In addition, it's not clear what the time is to reset.
     See below for getting header info for your requests.
 
     .. _CurlOpts:
@@ -108,12 +107,12 @@ class Crossref(object):
 
     * `query_title` - Query title and subtitle
     * `query_container_title` - Query container-title aka. publication name
-    * `query_author` - Query author first and given names
-    * `query_editor` - Query editor first and given names
-    * `query_chair` - Query chair first and given names
-    * `query_translator` - Query translator first and given names
-    * `query_contributor` - Query author, editor, chair and translator first and given names
-    * `query_bibliographic` - Query bibliographic infomration, useful for citation look up. Includes titles, authors, ISSNs and publication years
+    * `query_author` - Query author given and family names
+    * `query_editor` - Query editor given and family names
+    * `query_chair` - Query chair given and family names
+    * `query_translator` - Query translator given and family names
+    * `query_contributor` - Query author, editor, chair and translator given and family names
+    * `query_bibliographic` - Query bibliographic information, useful for citation look up. Includes titles, authors, ISSNs and publication years
     * `query_affiliation` - Query contributor affiliations
 
     .. _sorting:
@@ -172,7 +171,7 @@ class Crossref(object):
     def works(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, select = None, cursor = None,
-              cursor_max = 5000, **kwargs):
+              cursor_max = 5000, progress_bar = False, **kwargs):
         '''
         Search Crossref works
 
@@ -210,8 +209,10 @@ class Crossref(object):
             deep paging can result in continuous requests until all are retrieved, use this
             parameter to set a maximum number of records. Of course, if there are less records
             found than this value, you will get only those found.
+        :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
+            when using cursor parameter). default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
-            queries (see examples and FieldQueries_)
+            queries (see examples and FieldQueries_) 
 
         :return: A dict
 
@@ -276,6 +277,8 @@ class Crossref(object):
             items = [ z['message']['items'] for z in res ]
             items = [ item for sublist in items for item in sublist ]
             [ z['DOI'] for z in items ][0:50]
+            ### use progress bar
+            res = cr.works(query = "octopus", cursor = "*", limit = 500, progress_bar = True)
 
             # field queries
             res = cr.works(query = "ecology", query_author = 'carl boettiger')
@@ -290,16 +293,18 @@ class Crossref(object):
         if ids.__class__.__name__ != 'NoneType':
             return request(self.mailto, self.base_url, "/works/", ids,
                 query, filter, offset, limit, sample, sort,
-                order, facet, select, None, None, None, None, **kwargs)
+                order, facet, select, None, None, None, None, 
+                progress_bar, **kwargs)
         else:
             return Request(self.mailto, self.base_url, "/works/",
               query, filter, offset, limit, sample, sort,
-              order, facet, select, cursor, cursor_max, None, **kwargs).do_request()
+              order, facet, select, cursor, cursor_max, None, 
+              progress_bar, **kwargs).do_request()
 
     def members(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, works = False, select = None,
-              cursor = None, cursor_max = 5000, **kwargs):
+              cursor = None, cursor_max = 5000, progress_bar = False, **kwargs):
         '''
         Search Crossref members
 
@@ -328,6 +333,17 @@ class Crossref(object):
             a subset of elements to return. This can make your API calls much more efficient. Not
             clear yet which fields are allowed here.
         :param works: [Boolean] If true, works returned as well. Default: false
+        :param cursor: [String] Cursor character string to do deep paging. Default is None.
+            Pass in '*' to start deep paging. Any combination of query, filters and facets may be
+            used with deep paging cursors. While rows may be specified along with cursor, offset
+            and sample cannot be used. Only used if `works=True`
+            See https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md#deep-paging-with-cursors
+        :param cursor_max: [Fixnum] Max records to retrieve. Only used when cursor param used. Because
+            deep paging can result in continuous requests until all are retrieved, use this
+            parameter to set a maximum number of records. Of course, if there are less records
+            found than this value, you will get only those found. Only used if `works=True`
+        :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
+            when using cursor parameter). Only used if `works=True`. default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
             queries (see examples and FieldQueries_)
 
@@ -350,6 +366,8 @@ class Crossref(object):
             items = [ z['message']['items'] for z in res ]
             items = [ item for sublist in items for item in sublist ]
             [ z['DOI'] for z in items ][0:50]
+            ## use progress bar
+            res = cr.members(ids = 98, works = True, cursor = "*", cursor_max = 500, progress_bar = True)
 
             # field queries
             res = cr.members(ids = 98, works = True, query_author = 'carl boettiger', limit = 7)
@@ -357,12 +375,13 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/members/", ids,
             query, filter, offset, limit, sample, sort,
-            order, facet, select, works, cursor, cursor_max, **kwargs)
+            order, facet, select, works, cursor, cursor_max, 
+            None, progress_bar, **kwargs)
 
     def prefixes(self, ids = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, works = False, select = None,
-              cursor = None, cursor_max = 5000, **kwargs):
+              cursor = None, cursor_max = 5000, progress_bar = False, **kwargs):
         '''
         Search Crossref prefixes
 
@@ -375,7 +394,7 @@ class Crossref(object):
             for filter names and their descriptions and :func:`~habanero.Crossref.filter_names`
             and :func:`~habanero.Crossref.filter_details`
         :param offset: [Fixnum] Number of record to start at, from 1 to 10000
-        :param limit: [Fixnum] Number of results to return. Not relavant when searching with specific dois. Default: 20. Max: 1000
+        :param limit: [Fixnum] Number of results to return. Not relevant when searching with specific dois. Default: 20. Max: 1000
         :param sample: [Fixnum] Number of random results to return. when you use the sample parameter,
             the limit and offset parameters are ignored. This parameter only used when works requested. Max: 100
         :param sort: [String] Field to sort on. Note: If the API call includes a query, then the sort
@@ -390,6 +409,17 @@ class Crossref(object):
             a subset of elements to return. This can make your API calls much more efficient. Not
             clear yet which fields are allowed here.
         :param works: [Boolean] If true, works returned as well. Default: false
+        :param cursor: [String] Cursor character string to do deep paging. Default is None.
+            Pass in '*' to start deep paging. Any combination of query, filters and facets may be
+            used with deep paging cursors. While rows may be specified along with cursor, offset
+            and sample cannot be used. Only used if `works=True`
+            See https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md#deep-paging-with-cursors
+        :param cursor_max: [Fixnum] Max records to retrieve. Only used when cursor param used. Because
+            deep paging can result in continuous requests until all are retrieved, use this
+            parameter to set a maximum number of records. Of course, if there are less records
+            found than this value, you will get only those found. Only used if `works=True`
+        :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
+            when using cursor parameter). Only used if `works=True`. default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
             queries (see examples and FieldQueries_)
 
@@ -417,6 +447,8 @@ class Crossref(object):
             items = [ z['message']['items'] for z in res ]
             items = [ item for sublist in items for item in sublist ]
             [ z['DOI'] for z in items ][0:50]
+            ## use progress bar
+            res = cr.prefixes(ids = "10.1016", works = True, cursor = "*", cursor_max = 200, progress_bar = True)
 
             # field queries
             res = cr.prefixes(ids = "10.1371", works = True, query_editor = 'cooper', filter = {'type': 'journal-article'})
@@ -428,12 +460,12 @@ class Crossref(object):
           query = None, filter = filter, offset = offset, limit = limit,
           sample = sample, sort = sort, order = order, facet = facet,
           select = select, works = works, cursor = cursor, cursor_max = cursor_max,
-          **kwargs)
+          progress_bar = progress_bar, **kwargs)
 
     def funders(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, works = False, select = None,
-              cursor = None, cursor_max = 5000, **kwargs):
+              cursor = None, cursor_max = 5000, progress_bar = False, **kwargs):
         '''
         Search Crossref funders
 
@@ -465,6 +497,17 @@ class Crossref(object):
             a subset of elements to return. This can make your API calls much more efficient. Not
             clear yet which fields are allowed here.
         :param works: [Boolean] If true, works returned as well. Default: false
+        :param cursor: [String] Cursor character string to do deep paging. Default is None.
+            Pass in '*' to start deep paging. Any combination of query, filters and facets may be
+            used with deep paging cursors. While rows may be specified along with cursor, offset
+            and sample cannot be used. Only used if `works=True`
+            See https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md#deep-paging-with-cursors
+        :param cursor_max: [Fixnum] Max records to retrieve. Only used when cursor param used. Because
+            deep paging can result in continuous requests until all are retrieved, use this
+            parameter to set a maximum number of records. Of course, if there are less records
+            found than this value, you will get only those found. Only used if `works=True`
+        :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
+            when using cursor parameter). Only used if `works=True`. default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
             queries (see examples and FieldQueries_)
 
@@ -486,6 +529,8 @@ class Crossref(object):
             items = [ z['message']['items'] for z in res ]
             items = [ item for sublist in items for item in sublist ]
             [ z['DOI'] for z in items ][0:50]
+            ## use progress bar
+            res = cr.funders(ids = '10.13039/100000001', works = True, cursor = "*", cursor_max = 200, progress_bar = True)
 
             # field queries
             res = cr.funders(ids = "10.13039/100000001", works = True, query_container_title = 'engineering', filter = {'type': 'journal-article'})
@@ -494,12 +539,13 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/funders/", ids,
           query, filter, offset, limit, sample, sort,
-          order, facet, select, works, cursor, cursor_max, **kwargs)
+          order, facet, select, works, cursor, cursor_max, None, 
+          progress_bar, **kwargs)
 
     def journals(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, works = False, select = None,
-              cursor = None, cursor_max = 5000, **kwargs):
+              cursor = None, cursor_max = 5000, progress_bar = False, **kwargs):
         '''
         Search Crossref journals
 
@@ -513,7 +559,7 @@ class Crossref(object):
             for filter names and their descriptions and :func:`~habanero.Crossref.filter_names`
             and :func:`~habanero.Crossref.filter_details`
         :param offset: [Fixnum] Number of record to start at, from 1 to 10000
-        :param limit: [Fixnum] Number of results to return. Not relavant when searching with specific dois. Default: 20. Max: 1000
+        :param limit: [Fixnum] Number of results to return. Not relevant when searching with specific dois. Default: 20. Max: 1000
         :param sample: [Fixnum] Number of random results to return. when you use the sample parameter,
             the limit and offset parameters are ignored. This parameter only used when works requested. Max: 100
         :param sort: [String] Field to sort on. Note: If the API call includes a query, then the sort
@@ -528,6 +574,17 @@ class Crossref(object):
             a subset of elements to return. This can make your API calls much more efficient. Not
             clear yet which fields are allowed here.
         :param works: [Boolean] If true, works returned as well. Default: false
+        :param cursor: [String] Cursor character string to do deep paging. Default is None.
+            Pass in '*' to start deep paging. Any combination of query, filters and facets may be
+            used with deep paging cursors. While rows may be specified along with cursor, offset
+            and sample cannot be used. Only used if `works=True`
+            See https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md#deep-paging-with-cursors
+        :param cursor_max: [Fixnum] Max records to retrieve. Only used when cursor param used. Because
+            deep paging can result in continuous requests until all are retrieved, use this
+            parameter to set a maximum number of records. Of course, if there are less records
+            found than this value, you will get only those found. Only used if `works=True`
+        :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
+            when using cursor parameter). Only used if `works=True`. default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
             queries (see examples and FieldQueries_)
 
@@ -557,11 +614,13 @@ class Crossref(object):
             cr.journals(limit: 2)
 
             # cursor - deep paging
-            res = cr.funders(ids = '10.13039/100000001', works = True, cursor = "*", limit = 200)
+            res = cr.journals(ids = "2167-8359", works = True, cursor = "*", cursor_max = 200)
             sum([ len(z['message']['items']) for z in res ])
             items = [ z['message']['items'] for z in res ]
             items = [ item for sublist in items for item in sublist ]
             [ z['DOI'] for z in items ][0:50]
+            ## use progress bar
+            res = cr.journals(ids = "2167-8359", works = True, cursor = "*", cursor_max = 200, progress_bar = True)
 
             # field queries
             res = cr.journals(ids = "2167-8359", works = True, query_title = 'fish', filter = {'type': 'journal-article'})
@@ -569,12 +628,13 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/journals/", ids,
           query, filter, offset, limit, sample, sort,
-          order, facet, select, works, cursor, cursor_max, **kwargs)
+          order, facet, select, works, cursor, cursor_max, None, 
+          progress_bar, **kwargs)
 
     def types(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, works = False, select = None,
-              cursor = None, cursor_max = 5000, **kwargs):
+              cursor = None, cursor_max = 5000, progress_bar = False, **kwargs):
         '''
         Search Crossref types
 
@@ -588,7 +648,7 @@ class Crossref(object):
             for filter names and their descriptions and :func:`~habanero.Crossref.filter_names`
             and :func:`~habanero.Crossref.filter_details`
         :param offset: [Fixnum] Number of record to start at, from 1 to 10000
-        :param limit: [Fixnum] Number of results to return. Not relavant when searching with specific dois. Default: 20. Max: 1000
+        :param limit: [Fixnum] Number of results to return. Not relevant when searching with specific dois. Default: 20. Max: 1000
         :param sample: [Fixnum] Number of random results to return. when you use the sample parameter,
             the limit and offset parameters are ignored. This parameter only used when works requested. Max: 100
         :param sort: [String] Field to sort on. Note: If the API call includes a query, then the sort
@@ -603,6 +663,17 @@ class Crossref(object):
             a subset of elements to return. This can make your API calls much more efficient. Not
             clear yet which fields are allowed here.
         :param works: [Boolean] If true, works returned as well. Default: false
+        :param cursor: [String] Cursor character string to do deep paging. Default is None.
+            Pass in '*' to start deep paging. Any combination of query, filters and facets may be
+            used with deep paging cursors. While rows may be specified along with cursor, offset
+            and sample cannot be used. Only used if `works=True`
+            See https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md#deep-paging-with-cursors
+        :param cursor_max: [Fixnum] Max records to retrieve. Only used when cursor param used. Because
+            deep paging can result in continuous requests until all are retrieved, use this
+            parameter to set a maximum number of records. Of course, if there are less records
+            found than this value, you will get only those found. Only used if `works=True`
+        :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
+            when using cursor parameter). Only used if `works=True`. default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
             queries (see examples and FieldQueries_)
 
@@ -617,13 +688,19 @@ class Crossref(object):
             cr.types(ids = "journal-article")
             cr.types(ids = "journal", works = True)
 
+            # deep paging
+            res = cr.types(ids = "journal-article", works = True, cursor = "*", cursor_max = 120)
+            ## use progress bar
+            res = cr.types(ids = "journal-article", works = True, cursor = "*", cursor_max = 120, progress_bar = True)
+
             # field queries
             res = cr.types(ids = "journal-article", works = True, query_title = 'gender', rows = 100)
             [ x.get('title') for x in res['message']['items'] ]
         '''
         return request(self.mailto, self.base_url, "/types/", ids,
             query, filter, offset, limit, sample, sort,
-            order, facet, select, works, cursor, cursor_max, **kwargs)
+            order, facet, select, works, cursor, cursor_max, 
+            None, progress_bar, **kwargs)
 
     def licenses(self, query = None, offset = None,
               limit = None, sample = None, sort = None,
@@ -633,7 +710,7 @@ class Crossref(object):
 
         :param query: [String] A query string
         :param offset: [Fixnum] Number of record to start at, from 1 to 10000
-        :param limit: [Fixnum] Number of results to return. Not relavant when searching with specific dois. Default: 20. Max: 1000
+        :param limit: [Fixnum] Number of results to return. Not relevant when searching with specific dois. Default: 20. Max: 1000
         :param sort: [String] Field to sort on. Note: If the API call includes a query, then the sort
             order will be by the relevance score. If no query is included, then the sort order
             will be by DOI update date. See sorting_ for possible values.
@@ -680,7 +757,7 @@ class Crossref(object):
             "order", "facet", "works"], kwargs)
         res = request(self.mailto, self.base_url, "/works/", ids,
             None, None, None, None, None, None,
-            None, None, None, None, None, True, **kwargs)
+            None, None, None, None, None, None, True, **kwargs)
         if res.__class__ != list:
             k = []
             k.append(res)
@@ -709,7 +786,7 @@ class Crossref(object):
         '''
         res = request(self.mailto, self.base_url, "/works/", None,
             None, None, None, None, sample, None,
-            None, None, True, **kwargs)
+            None, None, None, True, None, None, None, **kwargs)
         return [ z['DOI'] for z in res['message']['items'] ]
 
     @staticmethod
@@ -727,7 +804,7 @@ class Crossref(object):
             cr = Crossref()
             cr.filter_names()
         '''
-        nms = filter_details.keys()
+        nms = list(filter_details.keys())
         nms.sort()
         return nms
 
