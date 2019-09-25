@@ -2,6 +2,7 @@ import requests
 import json
 import re
 import math
+import warnings
 from tqdm import tqdm
 
 from .filterhandler import filter_handler
@@ -41,7 +42,7 @@ class Request(object):
     tmpurl = self.url + self.path
     return tmpurl.strip("/")
 
-  def do_request(self):
+  def do_request(self, should_warn = False):
     filt = filter_handler(self.filter)
     if self.select.__class__ is list:
       self.select = ','.join(self.select)
@@ -59,16 +60,16 @@ class Request(object):
     # rename query filters
     payload = rename_query_filters(payload)
 
-    js = self._req(payload = payload)
+    js = self._req(payload = payload, should_warn = should_warn)
     if (js.__class__.__name__ == 'NoneType'):
       return None
     else:
       cu = js['message'].get('next-cursor')
       max_avail = js['message']['total-results']
-      res = self._redo_req(js, payload, cu, max_avail)
+      res = self._redo_req(js, payload, cu, max_avail, should_warn)
       return res
 
-  def _redo_req(self, js, payload, cu, max_avail):
+  def _redo_req(self, js, payload, cu, max_avail, should_warn):
     if(cu.__class__.__name__ != 'NoneType' and self.cursor_max > len(js['message']['items'])):
       res = [js]
       total = len(js['message']['items'])
@@ -81,9 +82,9 @@ class Request(object):
         runs = math.ceil(actual_max / (self.limit or 20))
         pbar = tqdm(total = runs - 1)
 
-      while(cu.__class__.__name__ != 'NoneType' and self.cursor_max > total and total < max_avail):
+      while(cu is not None and self.cursor_max > total and total < max_avail):
         payload['cursor'] = cu
-        out = self._req(payload = payload)
+        out = self._req(payload = payload, should_warn = should_warn)
         cu = out['message'].get('next-cursor')
         res.append(out)
         total = sum([ len(z['message']['items']) for z in res ])
@@ -95,7 +96,7 @@ class Request(object):
     else:
       return js
 
-  def _req(self, payload):
+  def _req(self, payload, should_warn):
     try:
       r = requests.get(self._url(), params = payload, headers = make_ua(self.mailto))
       r.raise_for_status()
@@ -104,10 +105,12 @@ class Request(object):
         f = r.json()
         raise RequestError(r.status_code, f['message'][0]['message'])
       except:
-        mssg = '%s: %s' % (r.status_code, r.reason)
-        warnings.warn(mssg)
-        return None
-        # r.raise_for_status()
+        if should_warn:
+          mssg = '%s: %s' % (r.status_code, r.reason)
+          warnings.warn(mssg)
+          return None
+        else:
+          r.raise_for_status()
     except requests.exceptions.RequestException as e:
       print(e)
     check_json(r)

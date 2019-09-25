@@ -3,7 +3,7 @@ import os
 import vcr
 from habanero import Crossref
 from nose.tools import raises
-from requests.exceptions import HTTPError
+from habanero import RequestError
 
 cr = Crossref()
 
@@ -21,8 +21,9 @@ def test_registration_agency_unicode():
     assert list == res.__class__
     assert str == res[0].__class__
 
-@raises(HTTPError)
+@raises(RequestError)
+# @raises(ex.HTTPError)
 @vcr.use_cassette('test/vcr_cassettes/registration_agency_bad_request.yaml')
 def test_registration_agency_bad_request():
     "registration agency - bad request"
-    res = cr.registration_agency(5)
+    cr.registration_agency(5)

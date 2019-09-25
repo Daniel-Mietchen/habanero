@@ -212,7 +212,7 @@ class Crossref(object):
         :param progress_bar: [Boolean] print progress bar. only used when doing deep paging (
             when using cursor parameter). default: False
         :param kwargs: additional named arguments passed on to `requests.get`, e.g., field
-            queries (see examples and FieldQueries_) 
+            queries (see examples and FieldQueries_)
 
         :return: A dict
 
@@ -290,15 +290,15 @@ class Crossref(object):
             ## or as a list
             cr.works(query = "ecology", select = ["DOI","title"])
         '''
-        if ids.__class__.__name__ != 'NoneType':
+        if ids is not None:
             return request(self.mailto, self.base_url, "/works/", ids,
                 query, filter, offset, limit, sample, sort,
-                order, facet, select, None, None, None, None, 
+                order, facet, select, None, None, None, None,
                 progress_bar, **kwargs)
         else:
             return Request(self.mailto, self.base_url, "/works/",
               query, filter, offset, limit, sample, sort,
-              order, facet, select, cursor, cursor_max, None, 
+              order, facet, select, cursor, cursor_max, None,
               progress_bar, **kwargs).do_request()
 
     def members(self, ids = None, query = None, filter = None, offset = None,
@@ -375,7 +375,7 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/members/", ids,
             query, filter, offset, limit, sample, sort,
-            order, facet, select, works, cursor, cursor_max, 
+            order, facet, select, works, cursor, cursor_max,
             None, progress_bar, **kwargs)
 
     def prefixes(self, ids = None, filter = None, offset = None,
@@ -465,7 +465,8 @@ class Crossref(object):
     def funders(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
               order = None, facet = None, works = False, select = None,
-              cursor = None, cursor_max = 5000, progress_bar = False, **kwargs):
+              cursor = None, cursor_max = 5000, progress_bar = False, warn = False,
+              **kwargs):
         '''
         Search Crossref funders
 
@@ -539,8 +540,8 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/funders/", ids,
           query, filter, offset, limit, sample, sort,
-          order, facet, select, works, cursor, cursor_max, None, 
-          progress_bar, **kwargs)
+          order, facet, select, works, cursor, cursor_max, None,
+          progress_bar, warn, **kwargs)
 
     def journals(self, ids = None, query = None, filter = None, offset = None,
               limit = None, sample = None, sort = None,
@@ -628,7 +629,7 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/journals/", ids,
           query, filter, offset, limit, sample, sort,
-          order, facet, select, works, cursor, cursor_max, None, 
+          order, facet, select, works, cursor, cursor_max, None,
           progress_bar, **kwargs)
 
     def types(self, ids = None, query = None, filter = None, offset = None,
@@ -699,7 +700,7 @@ class Crossref(object):
         '''
         return request(self.mailto, self.base_url, "/types/", ids,
             query, filter, offset, limit, sample, sort,
-            order, facet, select, works, cursor, cursor_max, 
+            order, facet, select, works, cursor, cursor_max,
             None, progress_bar, **kwargs)
 
     def licenses(self, query = None, offset = None,

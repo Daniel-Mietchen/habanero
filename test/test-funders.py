@@ -3,6 +3,7 @@ import os
 import vcr
 from nose.tools import *
 from habanero import exceptions
+import warnings
 
 from habanero import Crossref
 cr = Crossref()
@@ -77,7 +78,13 @@ def test_funders_field_queries():
     assert 100 == len(titles)
 
 @raises(exceptions.RequestError)
-@vcr.use_cassette('test/vcr_cassettes/funders_filters_not_allowed_with_dois.yaml')
-def test_funders_query_filters_not_allowed_with_dois():
+@vcr.use_cassette('test/vcr_cassettes/funders_filters_not_allowed_with_dois_error.yaml')
+def test_funders_query_filters_not_allowed_with_dois_error():
     "funders - param: kwargs - query filters not allowed on works/funderid/ route"
     cr.funders(ids = "10.13039/100000001", query_container_title = 'engineering')
+
+@raises(warnings.WarningMessage)
+@vcr.use_cassette('test/vcr_cassettes/funders_filters_not_allowed_with_dois_warn.yaml')
+def test_funders_query_filters_not_allowed_with_dois_warn():
+    "funders - param: kwargs - query filters not allowed on works/funderid/ route"
+    cr.funders(ids = "10.13039/100000001", query_container_title = 'engineering', warn = True)

@@ -4,6 +4,7 @@ import os
 import vcr
 from habanero import exceptions
 from requests import exceptions as ex
+import warnings
 
 from habanero import Crossref
 cr = Crossref()
@@ -32,6 +33,7 @@ def test_cursor_max():
     assert 40 == len(items2)
 
 @raises(ex.HTTPError)
+# @raises(warnings.WarningMessage)
 @vcr.use_cassette('test/vcr_cassettes/cursor_err1.yaml')
 def test_cursor_fails_cursor_value():
     "cursor works - fails when cursor value bad"

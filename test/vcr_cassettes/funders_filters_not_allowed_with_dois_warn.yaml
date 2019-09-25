@@ -8,18 +8,20 @@ interactions:
       User-Agent: [python-requests/2.22.0 habanero/0.6.2.2]
       X-USER-AGENT: [python-requests/2.22.0 habanero/0.6.2.2]
     method: GET
-    uri: https://api.crossref.org/works/5/agency
+    uri: https://api.crossref.org/funders/10.13039/100000001?query.container-title=engineering
   response:
-    body: {string: Resource not found.}
+    body: {string: '{"status":"failed","message-type":"validation-failure","message":[{"type":"parameter-not-allowed","value":"query.*","message":"This
+        route does not support field query parameters"}]}'}
     headers:
       Access-Control-Allow-Headers: [X-Requested-With]
       Access-Control-Allow-Origin: ['*']
       Connection: [close]
-      Content-Length: ['19']
-      Content-Type: [text/plain]
-      Date: ['Thu, 29 Aug 2019 23:50:54 GMT']
+      Content-Length: ['181']
+      Content-Type: [application/json;charset=UTF-8]
+      Date: ['Fri, 30 Aug 2019 00:24:35 GMT']
       Server: [http-kit]
+      Vary: [Accept]
       X-Rate-Limit-Interval: [1s]
       X-Rate-Limit-Limit: ['50']
-    status: {code: 404, message: Not Found}
+    status: {code: 400, message: Bad Request}
 version: 1
